@@ -4,37 +4,27 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 import sys
 import os
-import getpass
-import os
 
-# Get username safely
-user_name = getpass.getuser()
-documents_path = os.path.join("C:\\Users", user_name, "Documents", "pics")
-image_path = os.path.join(documents_path, "stock_prediction.png")
-exists = os.path.exists(image_path)
-
-image_path, exists
-
-if len(sys.argv) > 1:
-    output_folder = sys.argv[1]
-else:
-    output_folder = os.getcwd()  
-
+# Get output folder from command-line argument or use current directory
+output_folder = sys.argv[1] if len(sys.argv) > 1 else os.getcwd()
 output_path = os.path.join(output_folder, "stock_prediction.png")
 
+# Download stock data
 stock = yf.download('AAPL', period='60d', interval='1d')
 stock = stock.reset_index()
-stock['Day'] = np.arange(len(stock))  
+stock['Day'] = np.arange(len(stock))  # Add numeric Day index
 
+# Prepare model data
 X = stock[['Day']]
 y = stock['Close']
-
 model = LinearRegression()
 model.fit(X, y)
 
+# Predict next 10 days
 future_days = np.arange(len(stock), len(stock) + 10).reshape(-1, 1)
 predicted_prices = model.predict(future_days)
 
+# Plot the result
 plt.figure(figsize=(10, 5))
 plt.plot(stock['Day'], y, label='Actual Price', marker='o')
 plt.plot(future_days, predicted_prices, label='Predicted Price', linestyle='--', color='red')
@@ -43,7 +33,8 @@ plt.xlabel('Day')
 plt.ylabel('Price')
 plt.legend()
 plt.grid(True)
-
 plt.tight_layout()
+
+# Save the image
 plt.savefig(output_path)
-print(f"Image saved to: {output_path}")
+print(f"✅ Image saved to: {output_path}")
