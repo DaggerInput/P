@@ -1,3 +1,4 @@
+
 import yfinance as yf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -34,7 +35,6 @@ def add_rounded_corners_with_glow(image_path, radius=30, glow_size=15):
         print(f"Error applying rounded corners and glow: {e}")
 
 stocks = ['AAPL', 'GOOG', 'META', 'NVDA', 'AMZN', 'GOOGL', 'BRK-B', 'AVGO', 'TSLA', 'MSFT']
-
 user_name = getpass.getuser()
 output_folder = Path(f"C:/Users/{user_name}/Documents/pics")
 output_folder.mkdir(parents=True, exist_ok=True)
