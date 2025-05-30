@@ -1,10 +1,7 @@
 import yfinance as yf
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, LSTM
+from sklearn.linear_model import LinearRegression
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter
 import getpass
@@ -42,77 +39,59 @@ def add_rounded_corners_with_glow(image_path, radius=30, glow_size=15):
     except Exception as e:
         print(f"Error applying rounded corners and glow: {e}")
 
-symbol = 'AAPL'
+stocks = ['AAPL', 'GOOG', 'META', 'NVDA', 'AMZN', 'GOOGL', 'BRK-B', 'AVGO', 'TSLA', 'MSFT']
+
 user_name = getpass.getuser()
 output_folder = Path(f"C:/Users/{user_name}/Documents/pics")
 output_folder.mkdir(parents=True, exist_ok=True)
 
-try:
-    stock = yf.download(symbol, period='180d', interval='1d')
-    close_prices = stock['Close'].values.reshape(-1, 1)
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    scaled_data = scaler.fit_transform(close_prices)
+for symbol in stocks:
+    try:
+        stock = yf.download(symbol, period='60d', interval='1d')
+        stock = stock.reset_index()
+        stock['Day'] = np.arange(len(stock))
 
-    look_back = 60
-    X, y = [], []
-    for i in range(look_back, len(scaled_data)):
-        X.append(scaled_data[i - look_back:i])
-        y.append(scaled_data[i])
+        X = stock[['Day']]
+        y = stock['Close']
+        model = LinearRegression()
+        model.fit(X, y)
+        future_days = np.arange(len(stock), len(stock) + 10).reshape(-1, 1)
+        predicted_prices = model.predict(future_days)
 
-    X, y = np.array(X), np.array(y)
-    X = np.reshape(X, (X.shape[0], X.shape[1], 1))
+        fig, ax = plt.subplots(figsize=(10, 5))
+        fig.patch.set_facecolor('#1e1e1e')
+        ax.set_facecolor('#1e1e1e')
 
-    model = Sequential()
-    model.add(LSTM(50, return_sequences=False, input_shape=(X.shape[1], 1)))
-    model.add(Dense(1))
-    model.compile(optimizer='adam', loss='mean_squared_error')
-    model.fit(X, y, epochs=10, batch_size=16, verbose=0)
+        ax.plot(stock['Day'], y, label='Actual Price', color='deepskyblue', linewidth=2, marker='o')
+        ax.plot(future_days.flatten(), predicted_prices, label='Predicted Price', linestyle='--', color='tomato', linewidth=2)
 
-    last_60_days = scaled_data[-look_back:]
-    prediction_input = last_60_days.reshape(1, look_back, 1)
-    future_predictions = []
-    for _ in range(7):
-        pred = model.predict(prediction_input)[0][0]
-        future_predictions.append(pred)
-        new_input = np.append(prediction_input[0][1:], [[pred]], axis=0)
-        prediction_input = np.reshape(new_input, (1, look_back, 1))
+        ax.set_title(f'{symbol} Stock Price Prediction', fontsize=14, color='white')
+        ax.set_xlabel('Day', color='white')
+        ax.set_ylabel('Price', color='white')
+        ax.tick_params(colors='white')
+        ax.grid(True, linestyle='--', alpha=0.3)
 
-    predicted_prices = scaler.inverse_transform(np.array(future_predictions).reshape(-1, 1)).flatten()
+        legend = ax.legend(frameon=True)
+        legend.get_frame().set_facecolor((0.1, 0.1, 0.1, 0.9))
+        legend.get_frame().set_edgecolor('white')
+        for text in legend.get_texts():
+            text.set_color('white')
 
-    fig, ax = plt.subplots(figsize=(10, 5))
-    fig.patch.set_facecolor('#1e1e1e')
-    ax.set_facecolor('#1e1e1e')
+        for spine in ax.spines.values():
+            spine.set_edgecolor('white')
+            spine.set_linewidth(0.8)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
 
-    ax.plot(range(len(close_prices)), close_prices, label='Actual Price', color='deepskyblue', linewidth=2)
-    ax.plot(range(len(close_prices), len(close_prices) + 7), predicted_prices, label='Predicted Price', linestyle='--', color='tomato', linewidth=2)
+        plt.tight_layout()
 
-    ax.set_title(f'{symbol} Stock Price Prediction', fontsize=14, color='white')
-    ax.set_xlabel('Day', color='white')
-    ax.set_ylabel('Price', color='white')
-    ax.tick_params(colors='white')
-    ax.grid(True, linestyle='--', alpha=0.3)
+        image_path = output_folder / f"{symbol}_prediction.png"
+        plt.savefig(image_path, dpi=150, bbox_inches='tight', transparent=False)
+        plt.close()
 
-    legend = ax.legend(frameon=True)
-    legend.get_frame().set_facecolor((0.1, 0.1, 0.1, 0.9))
-    legend.get_frame().set_edgecolor('white')
-    for text in legend.get_texts():
-        text.set_color('white')
+        add_rounded_corners_with_glow(image_path)
 
-    for spine in ax.spines.values():
-        spine.set_edgecolor('white')
-        spine.set_linewidth(0.8)
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
+        print(f"Saved: {image_path}")
 
-    plt.tight_layout()
-
-    image_path = output_folder / f"{symbol}_prediction.png"
-    plt.savefig(image_path, dpi=150, bbox_inches='tight', transparent=False)
-    plt.close()
-
-    add_rounded_corners_with_glow(image_path)
-
-    print(f"Saved: {image_path}")
-
-except Exception as e:
-    print(f"Error generating for {symbol}: {e}")
+    except Exception as e:
+        print(f"Error generating for {symbol}: {e}")
