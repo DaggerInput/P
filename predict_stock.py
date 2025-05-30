@@ -20,7 +20,7 @@ y = stock['Close']
 model = LinearRegression()
 model.fit(X, y)
 
-# Predict next 10 days
+# Predict the next 10 days
 future_days = np.arange(len(stock), len(stock) + 10).reshape(-1, 1)
 predicted_prices = model.predict(future_days)
 
@@ -37,4 +37,4 @@ plt.tight_layout()
 
 # Save the image
 plt.savefig(output_path)
-print(f"✅ Image saved to: {output_path}")
+print(f"Image saved to: {output_path}")
