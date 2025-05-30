@@ -4,6 +4,17 @@ import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 import sys
 import os
+import getpass
+import os
+
+# Get username safely
+user_name = getpass.getuser()
+documents_path = os.path.join("C:\\Users", user_name, "Documents", "pics")
+image_path = os.path.join(documents_path, "stock_prediction.png")
+exists = os.path.exists(image_path)
+
+image_path, exists
+
 if len(sys.argv) > 1:
     output_folder = sys.argv[1]
 else:
